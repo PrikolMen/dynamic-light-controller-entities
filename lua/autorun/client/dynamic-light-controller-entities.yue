@@ -1,0 +1,472 @@
+addonName = "Dynamic Light Controller - Entities"
+PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
+entities = list.GetForEdit( addonName )
+:CreateClientside = ents
+
+do
+
+    cl_dlc_entities = CreateClientConVar( "cl_dlc_entities", "1", true, false, "", 0, 1 )
+    :GetClass = FindMetaTable( "Entity" )
+    isfunction = isfunction
+
+    hook.Add( "NotifyShouldTransmit", addonName, ( entity, shouldtransmit ) ->
+        if shouldtransmit
+            if not cl_dlc_entities\GetBool! or entity.DLightController
+                return
+
+            dlight = entity.__dlight
+            if dlight and dlight\IsValid!
+                return
+
+            func = entities[ GetClass( entity ) ]
+            unless func and isfunction( func )
+                return
+
+            dlight = CreateClientside( "dlight_controller" )
+            dlight\SetEnabled( true )
+
+            if func( entity, dlight ) == false
+                dlight\Remove!
+                return
+
+            entity.__dlight = dlight
+            dlight\Spawn!
+            return
+
+        dlight = entity.__dlight
+        if dlight and dlight\IsValid!
+            dlight\Remove!
+
+    PRE_HOOK )
+
+    hook.Add( "OnEntityCreated", addonName, ( entity ) ->
+        if not cl_dlc_entities\GetBool! or entity.DLightController
+            return
+
+        dlight = entity.__dlight
+        if dlight and dlight\IsValid!
+            return
+
+        func = entities[ GetClass( entity ) ]
+        unless func and isfunction( func )
+            return
+
+        dlight = CreateClientside( "dlight_controller" )
+        dlight\SetEnabled( true )
+
+        if func( entity, dlight ) == false
+            dlight\Remove!
+            return
+
+        entity.__dlight = dlight
+        dlight\Spawn!
+        return
+
+    PRE_HOOK )
+
+    hook.Add( "PlayerSwitchWeapon", addonName, ( _, __, entity ) ->
+        if entity.DLightController
+            return
+
+        dlight = entity.__dlight
+        if dlight and dlight\IsValid!
+            dlight\Remove!
+
+        unless cl_dlc_entities\GetBool!
+            return
+
+        func = entities[ GetClass( entity ) ]
+        unless func and isfunction( func )
+            return
+
+        dlight = CreateClientside( "dlight_controller" )
+        dlight\SetEnabled( true )
+
+        if func( entity, dlight ) == false
+            dlight\Remove!
+            return
+
+        entity.__dlight = dlight
+        dlight\Spawn!
+        return
+
+    PRE_HOOK )
+
+hook.Add( "EntityRemoved", addonName, ( entity, fullUpdate ) ->
+    dlight = entity.__dlight
+    if dlight and dlight\IsValid!
+        dlight\Remove!
+
+PRE_HOOK )
+
+entities[ "entityflame" ] = ( entity, dlight ) ->
+    parent = entity\GetParent!
+    unless parent and parent\IsValid!
+        return false
+
+    parent.__dlight = dlight
+
+    dlight\SetStyle( 5 )
+    dlight\SetRadius( 128 )
+    dlight\SetBrightness( 1 )
+    dlight\SetParent( parent )
+    dlight\SetLightColor( 255, 100, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+entities[ "item_battery" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetSpriteAlpha( 5 )
+    dlight\SetLightColor( 0, 255, 255 )
+    dlight\SetLocalPos( Vector( 3, 0, 6 ) )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "item_healthkit" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 48 )
+    dlight\SetParent( entity )
+    dlight\SetSpriteAlpha( 15 )
+    dlight\SetBrightness( 0.25 )
+    dlight\SetLightColor( 60, 255, 0 )
+    dlight\SetLocalPos( Vector( 4, 4, 4 ) )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "item_healthvial" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetSpriteAlpha( 25 )
+    dlight\SetLightColor( 60, 255, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "item_ammo_ar2" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetLightColor( 0, 255, 255 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+entities[ "item_ammo_ar2_large" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetLightColor( 0, 255, 255 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+entities[ "npc_rollermine"] = ( entity, dlight ) ->
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetLightColor( 0, 255, 255 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+entities[ "weapon_striderbuster"] = ( entity, dlight ) ->
+    dlight\SetStyle( 12 )
+    dlight\SetRadius( 48 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.25 )
+    dlight\SetSpriteAlpha( 100 )
+    dlight\SetLightColor( 0, 255, 255 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "grenade_helicopter" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 64 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetSpriteAlpha( 100 )
+    dlight\SetLightColor( 255, 0, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "env_rockettrail" ] = ( entity, dlight ) ->
+    dlight\SetRadius( 256 )
+    dlight\SetBrightness( 2 )
+    dlight\SetParent( entity )
+    dlight\SetLightColor( 255, 100, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+do
+
+    :ceil = math
+
+    entities[ "sent_ball" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 32 )
+        dlight\SetBrightness( 2 )
+        dlight\SetParent( entity )
+        dlight\SetLocalPos( entity\OBBCenter! )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            dlight\SetRadius( ceil( entity\GetBallSize! * 1.5 ) )
+            dlight\SetLightColor( entity\GetBallColor! )
+
+        return true
+
+entities[ "env_sprite" ] = ( entity, dlight ) ->
+    parent = entity\GetParent!
+    unless parent and parent\IsValid!
+        return false
+
+    parent.__dlight = dlight
+    dlight\SetParent( entity )
+    dlight\SetLocalPos( entity\OBBCenter! )
+
+    switch parent\GetClass!
+        when "crossbow_bolt"
+            dlight\SetLightColor( 255, 100, 0 )
+            dlight\SetBrightness( 0.25 )
+            dlight\SetRadius( 32 )
+
+        when "combine_mine"
+            dlight\SetLightColor( entity\GetColor! )
+            dlight\SetBrightness( 1 )
+            dlight\SetRadius( 32 )
+
+        when "npc_grenade_frag"
+            dlight\SetLightColor( 255, 0, 0 )
+            dlight\SetBrightness( 1 )
+            dlight\SetRadius( 32 )
+
+        when "npc_manhack"
+            dlight\SetLightColor( 255, 0, 0 )
+            dlight\SetBrightness( 0.25 )
+            dlight\SetRadius( 48 )
+
+        when "npc_cscanner"
+            dlight\SetLightColor( 255, 255, 255 )
+            dlight\SetBrightness( 0.5 )
+            dlight\SetRadius( 64 )
+
+        else
+
+            dlight\SetLightColor( entity\GetColor! )
+            dlight\SetBrightness( 1 )
+            dlight\SetRadius( 48 )
+
+
+    return true
+
+do
+
+    offset = Vector( 16, -3, 5 )
+    LocalToWorld = LocalToWorld
+    angle_zero = angle_zero
+    attachmentID = 0
+
+    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "", 0, 1 )
+
+    hook.Add "EntityFireBullets", addonName, ( data ) =>
+        unless cl_dlc_fire_bullets\GetBool!
+            return
+
+        dlight = CreateClientside( "dlight_controller" )
+        dlight\SetLightColor( 255, 100, 0 )
+        dlight\SetLifetime( 0.1 )
+        dlight\SetBrightness( 1 )
+        dlight\SetEnabled( true )
+        dlight\SetPos( data.Src )
+        dlight\SetRadius( 128 )
+
+        if @IsPlayer! or @IsNPC! or @IsNextBot!
+            attachmentID = @LookupAttachment( "anim_attachment_RH" )
+            if attachmentID > 0
+                attachment = @GetAttachment( attachmentID )
+                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
+
+        dlight\Spawn!
+
+    entities[ "weapon_physgun" ] = ( entity, dlight ) ->
+        dlight\SetLightColor( Vector( cvars.String( "cl_weaponcolor" ) ) )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 64 )
+        dlight\SetStyle( 5 )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            owner = entity\GetOwner!
+            unless owner and owner\IsValid!
+                dlight\SetPos( entity\WorldSpaceCenter! )
+                dlight\SetEnabled( true )
+                return
+
+            dlight\SetEnabled( owner\GetActiveWeapon! == entity )
+            dlight\SetLightColor( owner\GetWeaponColor! )
+
+            attachmentID = owner\LookupAttachment( "anim_attachment_RH" )
+            if attachmentID > 0
+                attachment = owner\GetAttachment( attachmentID )
+                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
+            else
+                dlight\SetPos( owner\GetShootPos! )
+
+        return true
+
+    entities[ "weapon_physcannon" ] = ( entity, dlight ) ->
+        dlight\SetLightColor( 255, 200, 0 )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 64 )
+        dlight\SetStyle( 5 )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            owner = entity\GetOwner!
+            unless owner and owner\IsValid!
+                dlight\SetPos( entity\WorldSpaceCenter! )
+                dlight\SetEnabled( true )
+                return
+
+            dlight\SetEnabled( owner\GetActiveWeapon! == entity )
+
+            attachmentID = owner\LookupAttachment( "anim_attachment_RH" )
+            if attachmentID > 0
+                attachment = owner\GetAttachment( attachmentID )
+                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
+            else
+                dlight\SetPos( owner\GetShootPos! )
+
+        return true
+
+    entities[ "weapon_crossbow" ] = ( entity, dlight ) ->
+        dlight\SetLightColor( 255, 200, 0 )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetRadius( 32 )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            owner = entity\GetOwner!
+            unless owner and owner\IsValid!
+                dlight\SetPos( entity\WorldSpaceCenter! )
+                dlight\SetEnabled( true )
+                return
+
+            dlight\SetEnabled( owner\GetActiveWeapon! == entity )
+
+            attachmentID = owner\LookupAttachment( "anim_attachment_RH" )
+            if attachmentID > 0
+                attachment = owner\GetAttachment( attachmentID )
+                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
+            else
+                dlight\SetPos( owner\GetShootPos! )
+
+            r, g = dlight\GetRed!, dlight\GetGreen!
+            if entity\Clip1! == 0
+                if r ~= 0
+                    dlight\SetRed( 0 )
+
+                if g ~= 0
+                    dlight\SetGreen( 0 )
+
+                return
+
+            if r ~= 255
+                dlight\SetRed( 255 )
+
+            if g ~= 200
+                dlight\SetGreen( 200 )
+
+        return true
+
+    entities[ "weapon_medkit" ] = ( entity, dlight ) ->
+        dlight\SetLightColor( 60, 255, 0 )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 48 )
+        dlight\SetStyle( 5 )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            owner = entity\GetOwner!
+            unless owner and owner\IsValid!
+                dlight\SetPos( entity\WorldSpaceCenter! )
+                dlight\SetEnabled( true )
+                return
+
+            dlight\SetEnabled( owner\GetActiveWeapon! == entity )
+
+            attachmentID = owner\LookupAttachment( "anim_attachment_RH" )
+            if attachmentID > 0
+                attachment = owner\GetAttachment( attachmentID )
+                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
+            else
+                dlight\SetPos( owner\GetShootPos! )
+
+            fraction = entity\Clip1! / entity\GetMaxClip1!
+            dlight\SetRed( Lerp( fraction, 0, 60 ) )
+            dlight\SetGreen( Lerp( fraction, 0, 255 ) )
+
+        return true
+
+entities[ "item_ammo_ar2_altfire" ] = ( entity, dlight ) ->
+    dlight\SetStyle( 5 )
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetSpriteAlpha( 50 )
+    dlight\SetLightColor( 255, 200, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+do
+
+    frac = 0
+
+    entities[ "item_suitcharger" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 32 )
+        dlight\SetParent( entity )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetLightColor( 255, 200, 0 )
+        dlight\SetLocalPos( entity\OBBCenter! )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            frac = 1 - entity\GetCycle!
+            dlight\SetLightColor( 255 * frac, 200 * frac, 0 )
+
+        return true
+
+    entities[ "item_healthcharger" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 32 )
+        dlight\SetParent( entity )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetLightColor( 0, 255, 255 )
+        dlight\SetLocalPos( entity\OBBCenter! )
+
+        dlight.LightThink = ->
+            unless entity\IsValid!
+                dlight\Remove!
+                return
+
+            frac = 1 - entity\GetCycle!
+            dlight\SetLightColor( 0, 255 * frac, 255 * frac )
+
+        return true
