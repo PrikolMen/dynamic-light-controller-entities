@@ -5,7 +5,7 @@ entities = list.GetForEdit( addonName )
 
 do
 
-    cl_dlc_entities = CreateClientConVar( "cl_dlc_entities", "1", true, false, "", 0, 1 )
+    cl_dlc_entities = CreateClientConVar( "cl_dlc_entities", "1", true, false, "Enables creation dynamic light emitters for game entities.", 0, 1 )
     :GetClass = FindMetaTable( "Entity" )
     isfunction = isfunction
 
@@ -268,7 +268,7 @@ do
     angle_zero = angle_zero
     attachmentID = 0
 
-    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "", 0, 1 )
+    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
 
     hook.Add "EntityFireBullets", addonName, ( data ) =>
         unless cl_dlc_fire_bullets\GetBool!
