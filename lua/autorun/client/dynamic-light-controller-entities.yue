@@ -217,6 +217,28 @@ entities[ "env_rockettrail" ] = ( entity, dlight ) ->
     dlight\SetLocalPos( entity\OBBCenter! )
     return true
 
+entities[ "item_ammo_ar2_altfire" ] = ( entity, dlight ) ->
+    dlight\SetStyle( 5 )
+    dlight\SetRadius( 32 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 0.5 )
+    dlight\SetSpriteAlpha( 50 )
+    dlight\SetLightColor( 255, 200, 0 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
+entities[ "prop_combine_ball" ] = ( entity, dlight ) ->
+    dlight\SetStyle( 5 )
+    dlight\SetRadius( 512 )
+    dlight\SetParent( entity )
+    dlight\SetBrightness( 2 )
+    dlight\SetSpriteScale( 0.15 )
+    dlight\SetLightColor( 255, 240, 150 )
+    dlight\SetLocalPos( entity\OBBCenter! )
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    return true
+
 do
 
     :ceil = math
@@ -437,17 +459,6 @@ do
             dlight\SetGreen( Lerp( fraction, 0, 255 ) )
 
         return true
-
-entities[ "item_ammo_ar2_altfire" ] = ( entity, dlight ) ->
-    dlight\SetStyle( 5 )
-    dlight\SetRadius( 32 )
-    dlight\SetParent( entity )
-    dlight\SetBrightness( 0.5 )
-    dlight\SetSpriteAlpha( 50 )
-    dlight\SetLightColor( 255, 200, 0 )
-    dlight\SetLocalPos( entity\OBBCenter! )
-    dlight\SetSprite( "sprites/gmdm_pickups/light" )
-    return true
 
 do
 
