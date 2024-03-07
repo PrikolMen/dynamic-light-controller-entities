@@ -114,25 +114,45 @@ entities[ "entityflame" ] = ( entity, dlight ) ->
     dlight\SetLocalPos( entity\OBBCenter! )
     return true
 
-entities[ "item_battery" ] = ( entity, dlight ) ->
-    dlight\SetRadius( 32 )
-    dlight\SetParent( entity )
-    dlight\SetBrightness( 0.5 )
-    dlight\SetSpriteAlpha( 5 )
-    dlight\SetLightColor( 0, 255, 255 )
-    dlight\SetLocalPos( Vector( 3, 0, 6 ) )
-    dlight\SetSprite( "sprites/gmdm_pickups/light" )
-    return true
+do
 
-entities[ "item_healthkit" ] = ( entity, dlight ) ->
-    dlight\SetRadius( 48 )
-    dlight\SetParent( entity )
-    dlight\SetSpriteAlpha( 15 )
-    dlight\SetBrightness( 0.25 )
-    dlight\SetLightColor( 60, 255, 0 )
-    dlight\SetLocalPos( Vector( 4, 4, 4 ) )
-    dlight\SetSprite( "sprites/gmdm_pickups/light" )
-    return true
+    offset = Vector( 3, 0, 6 )
+
+    entities[ "item_battery" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 32 )
+        dlight\SetParent( entity )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetSpriteAlpha( 5 )
+        dlight\SetLightColor( 0, 255, 255 )
+        dlight\SetLocalPos( offset )
+        dlight\SetSprite( "sprites/gmdm_pickups/light" )
+        return true
+
+do
+
+    offset = Vector( -10, 0, 0 )
+
+    entities[ "hunter_flechette" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 48 )
+        dlight\SetParent( entity )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetLightColor( 0, 255, 255 )
+        dlight\SetLocalPos( offset )
+        return true
+
+do
+
+    offset = Vector( 4, 4, 4 )
+
+    entities[ "item_healthkit" ] = ( entity, dlight ) ->
+        dlight\SetRadius( 48 )
+        dlight\SetParent( entity )
+        dlight\SetSpriteAlpha( 15 )
+        dlight\SetBrightness( 0.25 )
+        dlight\SetLightColor( 60, 255, 0 )
+        dlight\SetLocalPos( offset )
+        dlight\SetSprite( "sprites/gmdm_pickups/light" )
+        return true
 
 entities[ "item_healthvial" ] = ( entity, dlight ) ->
     dlight\SetRadius( 32 )
@@ -263,32 +283,28 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
 
 do
 
+    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
+
+    hook.Add( "EntityFireBullets", addonName, ( data ) =>
+        if cl_dlc_fire_bullets\GetBool!
+            dlight = CreateClientside( "dlight_controller" )
+            dlight\SetLightColor( 255, 100, 0 )
+            dlight\SetLifetime( 0.1 )
+            dlight\SetBrightness( 1 )
+            dlight\SetEnabled( true )
+            dlight\SetPos( data.Src )
+            dlight\SetRadius( 128 )
+            dlight\Spawn!
+            return
+
+    PRE_HOOK )
+
+do
+
     offset = Vector( 16, -3, 5 )
     LocalToWorld = LocalToWorld
     angle_zero = angle_zero
     attachmentID = 0
-
-    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
-
-    hook.Add "EntityFireBullets", addonName, ( data ) =>
-        unless cl_dlc_fire_bullets\GetBool!
-            return
-
-        dlight = CreateClientside( "dlight_controller" )
-        dlight\SetLightColor( 255, 100, 0 )
-        dlight\SetLifetime( 0.1 )
-        dlight\SetBrightness( 1 )
-        dlight\SetEnabled( true )
-        dlight\SetPos( data.Src )
-        dlight\SetRadius( 128 )
-
-        if @IsPlayer! or @IsNPC! or @IsNextBot!
-            attachmentID = @LookupAttachment( "anim_attachment_RH" )
-            if attachmentID > 0
-                attachment = @GetAttachment( attachmentID )
-                dlight\SetPos( LocalToWorld( offset, angle_zero, attachment.Pos, attachment.Ang ) )
-
-        dlight\Spawn!
 
     entities[ "weapon_physgun" ] = ( entity, dlight ) ->
         dlight\SetLightColor( Vector( cvars.String( "cl_weaponcolor" ) ) )
