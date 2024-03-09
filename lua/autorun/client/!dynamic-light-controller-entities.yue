@@ -1,5 +1,6 @@
 addonName = "Dynamic Light Controller - Entities"
 PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
+CreateClientConVar = CreateClientConVar
 entities = list.GetForEdit( addonName )
 :CreateClientside = ents
 
@@ -305,19 +306,57 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
 
 do
 
-    cl_dlc_fire_bullets = CreateClientConVar( "cl_dlc_fire_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
+    cl_dlc_bullets = CreateClientConVar( "cl_dlc_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
+    cl_dlc_bullets_brightness = CreateClientConVar( "cl_dlc_bullets_brightness", "1", true, false, "", 0, 10 )
+    cl_dlc_bullets_lifetime = CreateClientConVar( "cl_dlc_bullets_lifetime", "0.2", true, false, "", 0, 5 )
+    cl_dlc_bullets_radius = CreateClientConVar( "cl_dlc_bullets_radius", "128", true, false, "", 16, 4096 )
+    cl_dlc_bullets_color = CreateClientConVar( "cl_dlc_bullets_color", "255 100 0", true, false, "" )
+
+    r, g, b = unpack( string.Split( cl_dlc_bullets_color\GetString!, " " ) )
+    cvars.AddChangeCallback( cl_dlc_bullets_color\GetName!, ( _, __, value ) ->
+        r, g, b = unpack( string.Split( value, " " ) )
+    addonName )
 
     hook.Add( "EntityFireBullets", addonName, ( data ) =>
-        if cl_dlc_fire_bullets\GetBool!
+        if cl_dlc_bullets\GetBool!
             dlight = CreateClientside( "dlight_controller" )
-            dlight\SetLightColor( 255, 100, 0 )
-            dlight\SetLifetime( 0.1 )
-            dlight\SetBrightness( 1 )
+            dlight\SetLightColor( r, g, b )
+            dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
+            dlight\SetBrightness( cl_dlc_bullets_brightness\GetFloat! )
             dlight\SetEnabled( true )
             dlight\SetPos( data.Src )
-            dlight\SetRadius( 128 )
+            dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
             dlight\Spawn!
             return
+
+    PRE_HOOK )
+
+do
+
+    cl_dlc_explosions = CreateClientConVar( "cl_dlc_explosions", "1", true, false, "Enables creation of dynamic light emitters when something explode.", 0, 1 )
+    cl_dlc_explosions_brightness = CreateClientConVar( "cl_dlc_explosions_brightness", "2", true, false, "", 0, 10 )
+    cl_dlc_explosions_lifetime = CreateClientConVar( "cl_dlc_explosions_lifetime", "0.2", true, false, "", 0, 5 )
+    cl_dlc_explosions_radius = CreateClientConVar( "cl_dlc_explosions_radius", "512", true, false, "", 16, 4096 )
+    cl_dlc_explosions_color = CreateClientConVar( "cl_dlc_explosions_color", "255 100 0", true, false, "" )
+
+    r, g, b = unpack( string.Split( cl_dlc_explosions_color\GetString!, " " ) )
+    cvars.AddChangeCallback( cl_dlc_explosions_color\GetName!, ( _, __, value ) ->
+        r, g, b = unpack( string.Split( value, " " ) )
+    addonName )
+
+    hook.Add( "EntityEmitSound", addonName, ( data ) ->
+        unless data.OriginalSoundName == "BaseExplosionEffect.Sound" and cl_dlc_explosions\GetBool!
+            return
+
+        dlight = CreateClientside( "dlight_controller" )
+        dlight\SetBrightness( cl_dlc_explosions_brightness\GetFloat! )
+        dlight\SetLifetime( cl_dlc_explosions_lifetime\GetFloat! )
+        dlight\SetRadius( cl_dlc_explosions_radius\GetInt! )
+        dlight\SetLightColor( r, g, b )
+        dlight\SetPos( data.Pos )
+        dlight\SetEnabled( true )
+        dlight\Spawn!
+        return
 
     PRE_HOOK )
 
