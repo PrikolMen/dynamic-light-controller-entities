@@ -21,7 +21,7 @@ do
         if tbl == nil
             return
 
-        for className in pairs( tbl )
+        for className in *tbl
             blacklist[ className ] = true
 
 do
