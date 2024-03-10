@@ -2,24 +2,44 @@ addonName = "Dynamic Light Controller - Entities"
 PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
 CreateClientConVar = CreateClientConVar
 entities = list.GetForEdit( addonName )
+:GetClass = FindMetaTable( "Entity" )
 :CreateClientside = ents
+
+blacklist = {}
+
+do
+
+    fileName = "dlight_controller_entities_blacklist.json"
+    unless file.Exists( fileName, "DATA" )
+        file.Write( fileName, util.TableToJSON( { "example_entity_class1", "example_entity_class2" }, true ) )
+
+    file.AsyncRead fileName, "DATA", ( _, __, status, data ) ->
+        if status ~= FSASYNC_OK
+            return
+
+        tbl = util.JSONToTable( data )
+        if tbl == nil
+            return
+
+        for className in pairs( tbl )
+            blacklist[ className ] = true
 
 do
 
     cl_dlc_entities = CreateClientConVar( "cl_dlc_entities", "1", true, false, "Enables creation dynamic light emitters for game entities.", 0, 1 )
-    :GetClass = FindMetaTable( "Entity" )
     isfunction = isfunction
 
     hook.Add( "NotifyShouldTransmit", addonName, ( entity, shouldtransmit ) ->
-        if shouldtransmit
-            if not cl_dlc_entities\GetBool! or entity.DLightController
-                return
-
+        if shouldtransmit and cl_dlc_entities\GetBool! and not entity.DLightController
             dlight = entity.__dlight
             if dlight and dlight\IsValid!
                 return
 
-            func = entities[ GetClass( entity ) ]
+            className = GetClass( entity )
+            if blacklist[ className ]
+                return
+
+            func = entities[ className ]
             unless func and isfunction( func )
                 return
 
@@ -48,7 +68,11 @@ do
         if dlight and dlight\IsValid!
             return
 
-        func = entities[ GetClass( entity ) ]
+        className = GetClass( entity )
+        if blacklist[ className ]
+            return
+
+        func = entities[ className ]
         unless func and isfunction( func )
             return
 
@@ -76,7 +100,11 @@ do
         unless cl_dlc_entities\GetBool!
             return
 
-        func = entities[ GetClass( entity ) ]
+        className = GetClass( entity )
+        if blacklist[ className ]
+            return
+
+        func = entities[ className ]
         unless func and isfunction( func )
             return
 
@@ -113,6 +141,21 @@ entities[ "entityflame" ] = ( entity, dlight ) ->
     dlight\SetParent( parent )
     dlight\SetLightColor( 255, 100, 0 )
     dlight\SetLocalPos( entity\OBBCenter! )
+    return true
+
+entities[ "env_fire" ] = ( entity, dlight ) ->
+    dlight\SetSprite( "sprites/gmdm_pickups/light" )
+    dlight\SetLightColor( 255, 100, 0 )
+    dlight\SetSpriteAlpha( 255 )
+    dlight\SetSpriteScale( 0.5 )
+    dlight\SetBrightness( 1 )
+    dlight\SetRadius( 256 )
+    dlight\SetStyle( 5 )
+
+    dlight.LightThink = ->
+        if entity\IsValid!
+            dlight\SetPos( entity\GetPos! )
+
     return true
 
 do
@@ -269,38 +312,40 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
     dlight\SetParent( entity )
     dlight\SetLocalPos( entity\OBBCenter! )
 
-    switch parent\GetClass!
-        when "crossbow_bolt"
-            dlight\SetLightColor( 255, 100, 0 )
-            dlight\SetBrightness( 0.25 )
-            dlight\SetRadius( 32 )
+    className = GetClass( parent )
+    if blacklist[ className ]
+        return false
 
-        when "combine_mine"
-            dlight\SetLightColor( entity\GetColor! )
-            dlight\SetBrightness( 1 )
-            dlight\SetRadius( 32 )
+    if className == "crossbow_bolt"
+        dlight\SetLightColor( 255, 100, 0 )
+        dlight\SetBrightness( 0.25 )
+        dlight\SetRadius( 32 )
 
-        when "npc_grenade_frag"
-            dlight\SetLightColor( 255, 0, 0 )
-            dlight\SetBrightness( 1 )
-            dlight\SetRadius( 32 )
+    elseif className == "combine_mine"
+        dlight\SetLightColor( entity\GetColor! )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 32 )
 
-        when "npc_manhack"
-            dlight\SetLightColor( 255, 0, 0 )
-            dlight\SetBrightness( 0.25 )
-            dlight\SetRadius( 48 )
+    elseif className == "npc_grenade_frag"
+        dlight\SetLightColor( 255, 0, 0 )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 32 )
 
-        when "npc_cscanner"
-            dlight\SetLightColor( 255, 255, 255 )
-            dlight\SetBrightness( 0.5 )
-            dlight\SetRadius( 64 )
+    elseif className == "npc_manhack"
+        dlight\SetLightColor( 255, 0, 0 )
+        dlight\SetBrightness( 0.25 )
+        dlight\SetRadius( 48 )
 
-        else
+    elseif className == "npc_cscanner"
+        dlight\SetLightColor( 255, 255, 255 )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetRadius( 64 )
 
-            dlight\SetLightColor( entity\GetColor! )
-            dlight\SetBrightness( 1 )
-            dlight\SetRadius( 48 )
+    else
 
+        dlight\SetLightColor( entity\GetColor! )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 48 )
 
     return true
 
@@ -320,12 +365,12 @@ do
     hook.Add( "EntityFireBullets", addonName, ( data ) =>
         if cl_dlc_bullets\GetBool!
             dlight = CreateClientside( "dlight_controller" )
-            dlight\SetLightColor( r, g, b )
-            dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
             dlight\SetBrightness( cl_dlc_bullets_brightness\GetFloat! )
+            dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
+            dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
+            dlight\SetLightColor( r, g, b )
             dlight\SetEnabled( true )
             dlight\SetPos( data.Src )
-            dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
             dlight\Spawn!
             return
 
