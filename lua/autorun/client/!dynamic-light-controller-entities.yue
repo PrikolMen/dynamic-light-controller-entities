@@ -308,6 +308,10 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
     unless parent and parent\IsValid!
         return false
 
+    old = parent.__dlight
+    if old and old\IsValid!
+        old\Remove!
+
     parent.__dlight = dlight
     dlight\SetParent( entity )
     dlight\SetLocalPos( entity\OBBCenter! )
@@ -341,6 +345,13 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
         dlight\SetBrightness( 0.5 )
         dlight\SetRadius( 64 )
 
+    elseif className == "npc_satchel"
+        dlight\SetSprite( "sprites/gmdm_pickups/light" )
+        dlight\SetLightColor( 255, 0, 0 )
+        dlight\SetSpriteAlpha( 50 )
+        dlight\SetBrightness( 0.5 )
+        dlight\SetRadius( 32 )
+
     else
 
         dlight\SetLightColor( entity\GetColor! )
@@ -363,16 +374,22 @@ do
     addonName )
 
     hook.Add( "EntityFireBullets", addonName, ( data ) =>
-        if cl_dlc_bullets\GetBool!
-            dlight = CreateClientside( "dlight_controller" )
-            dlight\SetBrightness( cl_dlc_bullets_brightness\GetFloat! )
-            dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
-            dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
-            dlight\SetLightColor( r, g, b )
-            dlight\SetEnabled( true )
-            dlight\SetPos( data.Src )
-            dlight\Spawn!
+        unless cl_dlc_bullets\GetBool!
             return
+
+        unless r and g and b
+            r, g, b = 255, 100, 0
+
+        dlight = CreateClientside( "dlight_controller" )
+        dlight\SetBrightness( cl_dlc_bullets_brightness\GetFloat! )
+        dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
+        dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
+        dlight\SetLightColor( r, g, b )
+        dlight\SetEnabled( true )
+        dlight\SetPos( data.Src )
+        dlight\SetParent( @ )
+        dlight\Spawn!
+        return
 
     PRE_HOOK )
 
@@ -546,6 +563,8 @@ do
 
 do
 
+    offset1 = Vector( 8, -3, 6 )
+    offset2 = Vector( 8, -2, 2 )
     frac = 0
 
     entities[ "item_suitcharger" ] = ( entity, dlight ) ->
@@ -553,7 +572,7 @@ do
         dlight\SetParent( entity )
         dlight\SetBrightness( 0.5 )
         dlight\SetLightColor( 255, 200, 0 )
-        dlight\SetLocalPos( entity\OBBCenter! )
+        dlight\SetLocalPos( offset1 )
 
         dlight.LightThink = ->
             unless entity\IsValid!
@@ -570,7 +589,7 @@ do
         dlight\SetParent( entity )
         dlight\SetBrightness( 0.5 )
         dlight\SetLightColor( 0, 255, 255 )
-        dlight\SetLocalPos( entity\OBBCenter! )
+        dlight\SetLocalPos( offset2 )
 
         dlight.LightThink = ->
             unless entity\IsValid!
