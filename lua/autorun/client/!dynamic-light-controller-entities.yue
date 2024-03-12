@@ -441,7 +441,7 @@ do
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid!
+            unless owner and owner\IsValid! and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -470,7 +470,7 @@ do
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid!
+            unless owner and owner\IsValid! and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -497,7 +497,7 @@ do
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid!
+            unless owner and owner\IsValid! and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -541,7 +541,7 @@ do
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid!
+            unless owner and owner\IsValid! and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
