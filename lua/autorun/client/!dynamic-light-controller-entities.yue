@@ -27,11 +27,11 @@ do
 
 do
 
-    cl_dlc_entities = CreateClientConVar( "cl_dlc_entities", "1", true, false, "Enables creation dynamic light emitters for game entities.", 0, 1 )
+    dlight_controllers_entities = CreateClientConVar( "dlight_controllers_entities", "1", true, false, "Enables creation dynamic light emitters for game entities.", 0, 1 )
     isfunction = isfunction
 
     Add( "NotifyShouldTransmit", addonName, ( entity, shouldtransmit ) ->
-        if shouldtransmit and cl_dlc_entities\GetBool! and not entity.DLightController
+        if shouldtransmit and dlight_controllers_entities\GetBool! and not entity.DLightController
             dlight = entity.__dlight
             if dlight and dlight\IsValid!
                 return
@@ -62,7 +62,7 @@ do
     PRE_HOOK )
 
     Add( "OnEntityCreated", addonName, ( entity ) ->
-        if not cl_dlc_entities\GetBool! or entity.DLightController
+        if not dlight_controllers_entities\GetBool! or entity.DLightController
             return
 
         dlight = entity.__dlight
@@ -98,7 +98,7 @@ do
         if dlight and dlight\IsValid!
             dlight\Remove!
 
-        unless cl_dlc_entities\GetBool!
+        unless dlight_controllers_entities\GetBool!
             return
 
         className = GetClass( entity )
@@ -363,28 +363,28 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
 
 do
 
-    cl_dlc_bullets = CreateClientConVar( "cl_dlc_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
-    cl_dlc_bullets_brightness = CreateClientConVar( "cl_dlc_bullets_brightness", "1", true, false, "", 0, 10 )
-    cl_dlc_bullets_lifetime = CreateClientConVar( "cl_dlc_bullets_lifetime", "0.2", true, false, "", 0, 5 )
-    cl_dlc_bullets_radius = CreateClientConVar( "cl_dlc_bullets_radius", "128", true, false, "", 16, 4096 )
-    cl_dlc_bullets_color = CreateClientConVar( "cl_dlc_bullets_color", "255 100 0", true, false, "" )
+    dlight_controllers_bullets = CreateClientConVar( "dlight_controllers_bullets", "1", true, false, "Enables creation of dynamic light emitters when entities fire bullets.", 0, 1 )
+    dlight_controllers_bullets_brightness = CreateClientConVar( "dlight_controllers_bullets_brightness", "0.1", true, false, "", 0, 10 )
+    dlight_controllers_bullets_lifetime = CreateClientConVar( "dlight_controllers_bullets_lifetime", "0.2", true, false, "", 0, 5 )
+    dlight_controllers_bullets_radius = CreateClientConVar( "dlight_controllers_bullets_radius", "64", true, false, "", 16, 4096 )
+    dlight_controllers_bullets_color = CreateClientConVar( "dlight_controllers_bullets_color", "255 100 0", true, false, "" )
 
-    r, g, b = unpack( string.Split( cl_dlc_bullets_color\GetString!, " " ) )
-    cvars.AddChangeCallback( cl_dlc_bullets_color\GetName!, ( _, __, value ) ->
+    r, g, b = unpack( string.Split( dlight_controllers_bullets_color\GetString!, " " ) )
+    cvars.AddChangeCallback( dlight_controllers_bullets_color\GetName!, ( _, __, value ) ->
         r, g, b = unpack( string.Split( value, " " ) )
     addonName )
 
     Add( "EntityFireBullets", addonName, ( data ) =>
-        unless cl_dlc_bullets\GetBool!
+        unless dlight_controllers_bullets\GetBool!
             return
 
         unless r and g and b
             r, g, b = 255, 100, 0
 
         dlight = CreateClientside( "dlight_controller" )
-        dlight\SetBrightness( cl_dlc_bullets_brightness\GetFloat! )
-        dlight\SetLifetime( cl_dlc_bullets_lifetime\GetFloat! )
-        dlight\SetRadius( cl_dlc_bullets_radius\GetInt! )
+        dlight\SetBrightness( dlight_controllers_bullets_brightness\GetFloat! )
+        dlight\SetLifetime( dlight_controllers_bullets_lifetime\GetFloat! )
+        dlight\SetRadius( dlight_controllers_bullets_radius\GetInt! )
         dlight\SetLightColor( r, g, b )
         dlight\SetEnabled( true )
         dlight\SetPos( data.Src )
@@ -396,25 +396,25 @@ do
 
 do
 
-    cl_dlc_explosions = CreateClientConVar( "cl_dlc_explosions", "1", true, false, "Enables creation of dynamic light emitters when something explode.", 0, 1 )
-    cl_dlc_explosions_brightness = CreateClientConVar( "cl_dlc_explosions_brightness", "2", true, false, "", 0, 10 )
-    cl_dlc_explosions_lifetime = CreateClientConVar( "cl_dlc_explosions_lifetime", "0.2", true, false, "", 0, 5 )
-    cl_dlc_explosions_radius = CreateClientConVar( "cl_dlc_explosions_radius", "512", true, false, "", 16, 4096 )
-    cl_dlc_explosions_color = CreateClientConVar( "cl_dlc_explosions_color", "255 100 0", true, false, "" )
+    dlight_controllers_explosions = CreateClientConVar( "dlight_controllers_explosions", "1", true, false, "Enables creation of dynamic light emitters when something explode.", 0, 1 )
+    dlight_controllers_explosions_brightness = CreateClientConVar( "dlight_controllers_explosions_brightness", "2", true, false, "", 0, 10 )
+    dlight_controllers_explosions_lifetime = CreateClientConVar( "dlight_controllers_explosions_lifetime", "0.2", true, false, "", 0, 5 )
+    dlight_controllers_explosions_radius = CreateClientConVar( "dlight_controllers_explosions_radius", "512", true, false, "", 16, 4096 )
+    dlight_controllers_explosions_color = CreateClientConVar( "dlight_controllers_explosions_color", "255 100 0", true, false, "" )
 
-    r, g, b = unpack( string.Split( cl_dlc_explosions_color\GetString!, " " ) )
-    cvars.AddChangeCallback( cl_dlc_explosions_color\GetName!, ( _, __, value ) ->
+    r, g, b = unpack( string.Split( dlight_controllers_explosions_color\GetString!, " " ) )
+    cvars.AddChangeCallback( dlight_controllers_explosions_color\GetName!, ( _, __, value ) ->
         r, g, b = unpack( string.Split( value, " " ) )
     addonName )
 
     Add( "EntityEmitSound", addonName, ( data ) ->
-        unless data.OriginalSoundName == "BaseExplosionEffect.Sound" and cl_dlc_explosions\GetBool!
+        unless data.OriginalSoundName == "BaseExplosionEffect.Sound" and dlight_controllers_explosions\GetBool!
             return
 
         dlight = CreateClientside( "dlight_controller" )
-        dlight\SetBrightness( cl_dlc_explosions_brightness\GetFloat! )
-        dlight\SetLifetime( cl_dlc_explosions_lifetime\GetFloat! )
-        dlight\SetRadius( cl_dlc_explosions_radius\GetInt! )
+        dlight\SetBrightness( dlight_controllers_explosions_brightness\GetFloat! )
+        dlight\SetLifetime( dlight_controllers_explosions_lifetime\GetFloat! )
+        dlight\SetRadius( dlight_controllers_explosions_radius\GetInt! )
         dlight\SetLightColor( r, g, b )
         dlight\SetPos( data.Pos )
         dlight\SetEnabled( true )
