@@ -3,8 +3,8 @@ PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
 CreateClientConVar = CreateClientConVar
 entities = list.GetForEdit( addonName )
 :GetClass = FindMetaTable( "Entity" )
-:CreateClientside = ents
-:Add = hook
+import CreateClientside from ents
+import Add from hook
 
 blacklist = {}
 
@@ -129,35 +129,27 @@ Add( "EntityRemoved", addonName, ( entity, fullUpdate ) ->
 
 PRE_HOOK )
 
-entities[ "entityflame" ] = ( entity, dlight ) ->
-    parent = entity\GetParent!
-    unless parent and parent\IsValid!
-        return false
+do
 
-    parent.__dlight = dlight
+    dlight_controllers_env_fire = CreateClientConVar( "dlight_controllers_env_fire", "0", true, false, "Enables creation dynamic light emitters for env_fire.", 0, 1 )
 
-    dlight\SetStyle( 5 )
-    dlight\SetRadius( 128 )
-    dlight\SetBrightness( 1 )
-    dlight\SetParent( parent )
-    dlight\SetLightColor( 255, 100, 0 )
-    dlight\SetLocalPos( entity\OBBCenter! )
-    return true
+    entities[ "env_fire" ] = ( entity, dlight ) ->
+        unless dlight_controllers_env_fire\GetBool!
+            return false
 
-entities[ "env_fire" ] = ( entity, dlight ) ->
-    dlight\SetSprite( "sprites/gmdm_pickups/light" )
-    dlight\SetLightColor( 255, 100, 0 )
-    dlight\SetSpriteAlpha( 255 )
-    dlight\SetSpriteScale( 0.5 )
-    dlight\SetBrightness( 1 )
-    dlight\SetRadius( 256 )
-    dlight\SetStyle( 5 )
+        dlight\SetSprite( "sprites/gmdm_pickups/light" )
+        dlight\SetLightColor( 255, 100, 0 )
+        dlight\SetSpriteAlpha( 255 )
+        dlight\SetSpriteScale( 0.5 )
+        dlight\SetBrightness( 1 )
+        dlight\SetRadius( 256 )
+        dlight\SetStyle( 5 )
 
-    dlight.LightThink = ->
-        if entity\IsValid!
-            dlight\SetPos( entity\GetPos! )
+        dlight.LightThink = ->
+            if entity\IsValid!
+                dlight\SetPos( entity\GetPos! )
 
-    return true
+        return true
 
 do
 
@@ -354,10 +346,9 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
         dlight\SetRadius( 32 )
 
     else
-
         dlight\SetLightColor( entity\GetColor! )
         dlight\SetBrightness( 1 )
-        dlight\SetRadius( 48 )
+        dlight\SetRadius( 32 )
 
     return true
 
@@ -393,6 +384,37 @@ do
         return
 
     PRE_HOOK )
+
+do
+
+    import Iterator from ents
+
+    hook.Add "Think", addonName, ->
+        for _, entity in Iterator!
+            if entity\IsOnFire!
+                dlight = entity.m_eFireDLight
+                if dlight and dlight\IsValid!
+                    continue
+
+                dlight = CreateClientside( "dlight_controller" )
+                entity.m_eFireDLight = dlight
+
+                dlight\SetStyle( 5 )
+                dlight\SetRadius( 128 )
+                dlight\SetBrightness( 0.5 )
+                dlight\SetEnabled( true )
+                dlight\SetParent( entity )
+                dlight\SetLightColor( 255, 100, 0 )
+                dlight\SetLocalPos( entity\OBBCenter! )
+                dlight\Spawn!
+                continue
+
+            dlight = entity.m_eFireDLight
+            if dlight
+                if dlight\IsValid!
+                    dlight\Remove!
+
+                dlight.m_eFireDLight = nil
 
 do
 
