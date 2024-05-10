@@ -124,8 +124,18 @@ do
 
 Add( "EntityRemoved", addonName, ( entity, fullUpdate ) ->
     dlight = entity.__dlight
-    if dlight and dlight\IsValid!
-        dlight\Remove!
+    if dlight
+        if dlight\IsValid!
+            dlight\Remove!
+
+        entity.__dlight = nil
+
+    dlight = entity.m_eFireDLight
+    if dlight
+        if dlight\IsValid!
+            dlight\Remove!
+
+        entity.m_eFireDLight = nil
 
 PRE_HOOK )
 
