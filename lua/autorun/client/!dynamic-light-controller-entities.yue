@@ -317,7 +317,7 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
 
     parent.__dlight = dlight
     dlight\SetParent( entity )
-    dlight\SetLocalPos( entity\OBBCenter! )
+    offset = entity\OBBCenter!
 
     className = GetClass( parent )
     if blacklist[ className ]
@@ -332,6 +332,7 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
         dlight\SetLightColor( entity\GetColor! )
         dlight\SetBrightness( 1 )
         dlight\SetRadius( 32 )
+        offset[ 3 ] += 2
 
     elseif className == "npc_grenade_frag"
         dlight\SetLightColor( 255, 0, 0 )
@@ -360,6 +361,7 @@ entities[ "env_sprite" ] = ( entity, dlight ) ->
         dlight\SetBrightness( 1 )
         dlight\SetRadius( 32 )
 
+    dlight\SetLocalPos( offset )
     return true
 
 do
