@@ -1,10 +1,15 @@
 addonName = "Dynamic Light Controller - Entities"
+import IsValid, GetClass from FindMetaTable( "Entity" )
 PRE_HOOK = PRE_HOOK or HOOK_MONITOR_HIGH
 CreateClientConVar = CreateClientConVar
 entities = list.GetForEdit( addonName )
-:GetClass = FindMetaTable( "Entity" )
 import CreateClientside from ents
+import TraceLine from util
+import Simple from timer
 import Add from hook
+
+traceResult = {}
+trace = { output: traceResult }
 
 blacklist = {}
 
@@ -33,7 +38,7 @@ do
     Add( "NotifyShouldTransmit", addonName, ( entity, shouldtransmit ) ->
         if shouldtransmit and dlight_controllers_entities\GetBool! and not entity.DLightController
             dlight = entity.__dlight
-            if dlight and dlight\IsValid!
+            if dlight and IsValid( dlight )
                 return
 
             className = GetClass( entity )
@@ -45,6 +50,9 @@ do
                 return
 
             dlight = CreateClientside( "dlight_controller" )
+            unless dlight and IsValid( dlight )
+                return
+
             dlight\SetEnabled( true )
 
             if func( entity, dlight ) == false
@@ -56,7 +64,7 @@ do
             return
 
         dlight = entity.__dlight
-        if dlight and dlight\IsValid!
+        if dlight and IsValid( dlight )
             dlight\Remove!
 
     PRE_HOOK )
@@ -66,7 +74,7 @@ do
             return
 
         dlight = entity.__dlight
-        if dlight and dlight\IsValid!
+        if dlight and IsValid( dlight )
             return
 
         className = GetClass( entity )
@@ -78,6 +86,9 @@ do
             return
 
         dlight = CreateClientside( "dlight_controller" )
+        unless dlight and IsValid( dlight )
+            return
+
         dlight\SetEnabled( true )
 
         if func( entity, dlight ) == false
@@ -95,10 +106,14 @@ do
             return
 
         dlight = entity.__dlight
-        if dlight and dlight\IsValid!
+        if dlight and IsValid( dlight )
             dlight\Remove!
 
-        unless dlight_controllers_entities\GetBool!
+        bdlight = entity.__beam_dlight
+        if bdlight and IsValid( dlight )
+            bdlight\Remove!
+
+        unless dlight_controllers_entities\GetBool! and IsValid( entity )
             return
 
         className = GetClass( entity )
@@ -110,6 +125,9 @@ do
             return
 
         dlight = CreateClientside( "dlight_controller" )
+        unless dlight and IsValid( dlight )
+            return
+
         dlight\SetEnabled( true )
 
         if func( entity, dlight ) == false
@@ -125,19 +143,61 @@ do
 Add( "EntityRemoved", addonName, ( entity, fullUpdate ) ->
     dlight = entity.__dlight
     if dlight
-        if dlight\IsValid!
+        if IsValid( dlight )
             dlight\Remove!
 
         entity.__dlight = nil
 
     dlight = entity.m_eFireDLight
     if dlight
-        if dlight\IsValid!
+        if IsValid( dlight )
             dlight\Remove!
 
         entity.m_eFireDLight = nil
 
+    if entity\IsPlayer!
+        dlight = entity.__beam_dlight
+        if dlight
+            if IsValid( dlight )
+                dlight\Remove!
+
+            entity.__beam_dlight = nil
+
 PRE_HOOK )
+
+do
+
+    physgun_maxrange = GetConVar( "physgun_maxrange" )
+
+    Add "DrawPhysgunBeam", addonName .. " - Physgun", ( ply, wep, enabled, entity, physBone, localPos ) ->
+        bdlight = wep.__beam_dlight
+        unless bdlight and IsValid( bdlight )
+            return
+
+        bdlight\SetEnabled( enabled )
+
+        unless enabled
+            return
+
+        bdlight\SetLightColor( ply\GetWeaponColor! )
+
+        unless IsValid( entity )
+            trace.start = ply\GetShootPos!
+            trace.endpos = trace.start + ply\GetAimVector! * physgun_maxrange\GetInt!
+            trace.filter = ply
+            TraceLine( trace )
+
+            bdlight\SetPos( traceResult.HitPos + traceResult.HitNormal )
+            return
+
+        if physBone ~= 0
+            matrix = entity\GetBoneMatrix( entity\TranslatePhysBoneToBone( physBone ) )
+            if matrix
+                bdlight\SetPos( LocalToWorld( localPos, angle_zero, matrix\GetTranslation!, matrix\GetAngles! ) )
+                return
+
+        bdlight\SetPos( entity\LocalToWorld( localPos ) )
+        return
 
 do
 
@@ -156,7 +216,7 @@ do
         dlight\SetStyle( 5 )
 
         dlight.LightThink = ->
-            if entity\IsValid!
+            if IsValid( entity )
                 dlight\SetPos( entity\GetPos! )
 
         return true
@@ -297,7 +357,7 @@ do
         dlight\SetLocalPos( entity\OBBCenter! )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
@@ -308,11 +368,11 @@ do
 
 entities[ "env_sprite" ] = ( entity, dlight ) ->
     parent = entity\GetParent!
-    unless parent and parent\IsValid!
+    unless parent and IsValid( parent )
         return false
 
     old = parent.__dlight
-    if old and old\IsValid!
+    if old and IsValid( old )
         old\Remove!
 
     parent.__dlight = dlight
@@ -372,23 +432,43 @@ do
     dlight_controllers_bullets_radius = CreateClientConVar( "dlight_controllers_bullets_radius", "64", true, false, "", 16, 4096 )
     dlight_controllers_bullets_color = CreateClientConVar( "dlight_controllers_bullets_color", "255 100 0", true, false, "" )
 
-    r, g, b = unpack( string.Split( dlight_controllers_bullets_color\GetString!, " " ) )
+    r, g, b = unpack( string.Split( dlight_controllers_bullets_color\GetString!, " " ), nil )
     cvars.AddChangeCallback( dlight_controllers_bullets_color\GetName!, ( _, __, value ) ->
-        r, g, b = unpack( string.Split( value, " " ) )
+        r, g, b = unpack( string.Split( value, " " ), nil )
     addonName )
 
     Add( "EntityFireBullets", addonName, ( data ) =>
         unless dlight_controllers_bullets\GetBool!
             return
 
-        unless r and g and b
-            r, g, b = 255, 100, 0
+        Simple 0, ->
+            trace.start = data.Src
+            trace.endpos = data.Src + data.Dir * data.Distance
+            trace.filter = data.Entity
+            TraceLine( trace )
+
+            dlight = CreateClientside( "dlight_controller" )
+            unless dlight and IsValid( dlight )
+                return
+
+            dlight\SetLifetime( dlight_controllers_bullets_lifetime\GetFloat! )
+            dlight\SetPos( traceResult.HitPos + traceResult.HitNormal * 2 )
+            dlight\SetLightColor( r or 255, g or 100, b or 0 )
+            dlight\SetParent( traceResult.Entity )
+            dlight\SetBrightness( 0.1 )
+            dlight\SetEnabled( true )
+            dlight\SetRadius( 16 )
+            dlight\Spawn!
+            return
 
         dlight = CreateClientside( "dlight_controller" )
+        unless dlight and IsValid( dlight )
+            return
+
         dlight\SetBrightness( dlight_controllers_bullets_brightness\GetFloat! )
         dlight\SetLifetime( dlight_controllers_bullets_lifetime\GetFloat! )
         dlight\SetRadius( dlight_controllers_bullets_radius\GetInt! )
-        dlight\SetLightColor( r, g, b )
+        dlight\SetLightColor( r or 255, g or 100, b or 0 )
         dlight\SetEnabled( true )
         dlight\SetPos( data.Src )
         dlight\SetParent( @ )
@@ -405,10 +485,13 @@ do
         for _, entity in Iterator!
             if entity\IsOnFire!
                 dlight = entity.m_eFireDLight
-                if dlight and dlight\IsValid!
+                if dlight and IsValid( dlight )
                     continue
 
                 dlight = CreateClientside( "dlight_controller" )
+                unless dlight and IsValid( dlight )
+                    return
+
                 entity.m_eFireDLight = dlight
 
                 dlight\SetStyle( 5 )
@@ -423,7 +506,7 @@ do
 
             dlight = entity.m_eFireDLight
             if dlight
-                if dlight\IsValid!
+                if IsValid( dlight )
                     dlight\Remove!
 
                 dlight.m_eFireDLight = nil
@@ -446,6 +529,9 @@ do
             return
 
         dlight = CreateClientside( "dlight_controller" )
+        unless dlight and IsValid( dlight )
+            return
+
         dlight\SetBrightness( dlight_controllers_explosions_brightness\GetFloat! )
         dlight\SetLifetime( dlight_controllers_explosions_lifetime\GetFloat! )
         dlight\SetRadius( dlight_controllers_explosions_radius\GetInt! )
@@ -465,18 +551,25 @@ do
     attachmentID = 0
 
     entities[ "weapon_physgun" ] = ( entity, dlight ) ->
+        bdlight = CreateClientside( "dlight_controller" )
+        entity.__beam_dlight = bdlight
+        bdlight\SetBrightness( 0.01 )
+        bdlight\SetRadius( 128 )
+        bdlight\SetStyle( 5 )
+        bdlight\Spawn!
+
         dlight\SetLightColor( Vector( cvars.String( "cl_weaponcolor" ) ) )
         dlight\SetBrightness( 0.5 )
         dlight\SetRadius( 64 )
         dlight\SetStyle( 5 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid! and owner\IsPlayer!
+            unless owner and IsValid( owner ) and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -500,12 +593,12 @@ do
         dlight\SetStyle( 5 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid! and owner\IsPlayer!
+            unless owner and IsValid( owner ) and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -527,12 +620,12 @@ do
         dlight\SetRadius( 32 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid! and owner\IsPlayer!
+            unless owner and IsValid( owner ) and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -571,12 +664,12 @@ do
         dlight\SetStyle( 5 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
             owner = entity\GetOwner!
-            unless owner and owner\IsValid! and owner\IsPlayer!
+            unless owner and IsValid( owner ) and owner\IsPlayer!
                 dlight\SetPos( entity\WorldSpaceCenter! )
                 dlight\SetEnabled( true )
                 return
@@ -610,7 +703,7 @@ do
         dlight\SetLocalPos( offset1 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
@@ -627,7 +720,7 @@ do
         dlight\SetLocalPos( offset2 )
 
         dlight.LightThink = ->
-            unless entity\IsValid!
+            unless IsValid( entity )
                 dlight\Remove!
                 return
 
