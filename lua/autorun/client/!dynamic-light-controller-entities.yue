@@ -483,7 +483,7 @@ do
 
     hook.Add "Think", addonName, ->
         for _, entity in Iterator!
-            if entity\IsOnFire!
+            if IsValid( entity ) and entity\IsOnFire!
                 dlight = entity.m_eFireDLight
                 if dlight and IsValid( dlight )
                     continue
