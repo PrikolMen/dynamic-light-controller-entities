@@ -101,22 +101,23 @@ do
 
     PRE_HOOK )
 
-    Add( "PlayerSwitchWeapon", addonName, ( _, __, entity ) ->
-        if entity.DLightController
-            return
-
-        dlight = entity.__dlight
+    Add( "PlayerSwitchWeapon", addonName, ( _, old, new ) ->
+        dlight = old.__beam_dlight
         if dlight and IsValid( dlight )
             dlight\Remove!
 
-        bdlight = entity.__beam_dlight
-        if bdlight and IsValid( dlight )
-            bdlight\Remove!
+        dlight = old.__dlight
+        if dlight and IsValid( dlight )
+            dlight\Remove!
 
-        unless dlight_controllers_entities\GetBool! and IsValid( entity )
+        dlight = new.__dlight
+        if dlight and IsValid( dlight )
+            dlight\Remove!
+
+        unless dlight_controllers_entities\GetBool! and IsValid( new )
             return
 
-        className = GetClass( entity )
+        className = GetClass( new )
         if blacklist[ className ]
             return
 
@@ -130,11 +131,11 @@ do
 
         dlight\SetEnabled( true )
 
-        if func( entity, dlight ) == false
+        if func( new, dlight ) == false
             dlight\Remove!
             return
 
-        entity.__dlight = dlight
+        new.__dlight = dlight
         dlight\Spawn!
         return
 
@@ -155,13 +156,12 @@ Add( "EntityRemoved", addonName, ( entity, fullUpdate ) ->
 
         entity.m_eFireDLight = nil
 
-    if entity\IsPlayer!
-        dlight = entity.__beam_dlight
-        if dlight
-            if IsValid( dlight )
-                dlight\Remove!
+    dlight = entity.__beam_dlight
+    if dlight
+        if IsValid( dlight )
+            dlight\Remove!
 
-            entity.__beam_dlight = nil
+        entity.__beam_dlight = nil
 
 PRE_HOOK )
 
@@ -483,7 +483,10 @@ do
 
     hook.Add "Think", addonName, ->
         for _, entity in Iterator!
-            if IsValid( entity ) and entity\IsOnFire!
+            unless IsValid( entity )
+                return
+
+            if entity\IsOnFire!
                 dlight = entity.m_eFireDLight
                 if dlight and IsValid( dlight )
                     continue
